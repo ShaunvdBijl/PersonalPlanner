@@ -1,0 +1,216 @@
+@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@using PersonalPlanner.Data.Models
+@using PersonalPlanner.Services
+@using PersonalPlanner.Components.Shared
+@inject PlannerAuthStateProvider AuthStateProvider
+@inject PlannerService PlannerService
+@inject NavigationManager Nav
+
+@if (_currentUser is null)
+{
+    <p>Redirecting to login...</p>
+}
+else
+{
+    <div class="planner-container">
+        <header class="planner-header">
+            <div>
+                <h1>Next 2 Weeks Planner</h1>
+                <p class="date-range-label">
+                    @_startDate.ToString("ddd, dd MMM yyyy") — @_endDate.ToString("ddd, dd MMM yyyy")
+                </p>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn-primary" @onclick="OpenAddEventFromTopButton">
+                    + Add New Event
+                </button>
+                <button class="btn-secondary" @onclick="() => _showCategoryModal = true">
+                    Categories &amp; Colours
+                </button>
+                <button class="btn-outline" @onclick="HandleSignOut">
+                    Sign Out (@_currentUser.DisplayName)
+                </button>
+            </div>
+        </header>
+
+        <!-- Category Legend Bar -->
+        <section class="category-legend">
+            @foreach (var cat in _categories)
+            {
+                <span class="legend-chip" style="border-left: 5px solid @cat.ColorHex">
+                    <span class="color-dot" style="background-color: @cat.ColorHex"></span>
+                    @cat.Name
+                </span>
+            }
+        </section>
+
+        <!-- 2-Week Calendar Grid (14 Days) -->
+        <section class="calendar-grid">
+            @for (int i = 0; i < 14; i++)
+            {
+                var cellDate = _startDate.AddDays(i);
+                var cellEvents = _eventsByDate.TryGetValue(cellDate, out var list) ? list : [];
+                var cellStyle = GetBlendedCellStyle(cellEvents);
+
+                <div class="calendar-cell @(cellDate == DateOnly.FromDateTime(DateTime.Today) ? "today-cell" : "")"
+                     style="@cellStyle"
+                     @onclick="() => OpenAddEventForCell(cellDate)">
+
+                    <div class="cell-header">
+                        <span class="day-name">@cellDate.ToString("ddd")</span>
+                        <span class="day-number">@cellDate.ToString("dd MMM")</span>
+                        @if (cellEvents.Count > 1)
+                        {
+                            <span class="blend-badge" title="Blended from @cellEvents.Count items">
+                                Blended (@cellEvents.Count)
+                            </span>
+                        }
+                    </div>
+
+                    <div class="cell-events">
+                        @foreach (var ev in cellEvents)
+                        {
+                            <div class="event-pill"
+                                 style="background-color: @(ev.Category?.ColorHex ?? "#3B82F6")"
+                                 @onclick:stopPropagation="true">
+                                <div class="event-pill-content">
+                                    <strong>@ev.Title</strong>
+                                    @if (ev.StartTime.HasValue)
+                                    {
+                                        <span class="event-time">@ev.StartTime.Value.ToString("HH:mm")</span>
+                                    }
+                                </div>
+                                <button class="event-delete-btn"
+                                        title="Remove item"
+                                        @onclick="() => DeleteEventAsync(ev.Id)">
+                                    &times;
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    </div>
+
+    <AddEventModal IsVisible="_showAddEventModal"
+                   InitialDate="_selectedDate"
+                   Categories="_categories"
+                   OnSave="HandleSaveEventAsync"
+                   OnClose="() => _showAddEventModal = false" />
+
+    <CategoryManagerModal IsVisible="_showCategoryModal"
+                          Categories="_categories"
+                          OnColorChanged="HandleUpdateCategoryColorAsync"
+                          OnAddCategory="HandleAddCategoryAsync"
+                          OnClose="() => _showCategoryModal = false" />
+}
+
+@code {
+    private AppUser? _currentUser;
+    private DateOnly _startDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly _endDate => _startDate.AddDays(13);
+
+    private List<Category> _categories = [];
+    private Dictionary<DateOnly, List<PlannerEvent>> _eventsByDate = new();
+
+    private bool _showAddEventModal;
+    private bool _showCategoryModal;
+    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Today);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentUser = AuthStateProvider.CurrentUser;
+        if (_currentUser is null)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        await LoadPlannerDataAsync();
+    }
+
+    private async Task LoadPlannerDataAsync()
+    {
+        if (_currentUser is null) return;
+
+        _categories = await PlannerService.GetUserCategoriesAsync(_currentUser.Id);
+        var events = await PlannerService.GetEventsForWindowAsync(_currentUser.Id, _startDate, _endDate);
+
+        _eventsByDate = events
+            .GroupBy(e => e.EventDate)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    /// <summary>
+    /// Triggered by clicking any cell in the 2-week calendar.
+    /// </summary>
+    private void OpenAddEventForCell(DateOnly cellDate)
+    {
+        _selectedDate = cellDate;
+        _showAddEventModal = true;
+    }
+
+    /// <summary>
+    /// Triggered by the "+ Add New Event" button above the calendar.
+    /// Uses the exact same modal workflow as clicking a calendar cell.
+    /// </summary>
+    private void OpenAddEventFromTopButton()
+    {
+        _selectedDate = DateOnly.FromDateTime(DateTime.Today);
+        _showAddEventModal = true;
+    }
+
+    private string GetBlendedCellStyle(List<PlannerEvent> cellEvents)
+    {
+        if (cellEvents.Count == 0)
+            return string.Empty;
+
+        var hexColors = cellEvents
+            .Select(e => e.Category?.ColorHex ?? "#3B82F6")
+            .ToList();
+
+        string blendedHex = ColorBlender.BlendHexColors(hexColors);
+        string bgRgba = ColorBlender.ToRgbaCss(blendedHex, alpha: 0.30);
+
+        return $"background-color: {bgRgba}; border-color: {blendedHex}; border-width: 2px;";
+    }
+
+    private async Task HandleSaveEventAsync(PlannerEvent draftEvent)
+    {
+        if (_currentUser is null) return;
+        draftEvent.UserId = _currentUser.Id;
+        await PlannerService.AddEventAsync(draftEvent);
+        _showAddEventModal = false;
+        await LoadPlannerDataAsync();
+    }
+
+    private async Task DeleteEventAsync(Guid eventId)
+    {
+        if (_currentUser is null) return;
+        await PlannerService.DeleteEventAsync(eventId, _currentUser.Id);
+        await LoadPlannerDataAsync();
+    }
+
+    private async Task HandleUpdateCategoryColorAsync((Guid CategoryId, string NewColorHex) update)
+    {
+        if (_currentUser is null) return;
+        await PlannerService.UpdateCategoryColorAsync(update.CategoryId, _currentUser.Id, update.NewColorHex);
+        await LoadPlannerDataAsync();
+    }
+
+    private async Task HandleAddCategoryAsync((string Name, string ColorHex) newCat)
+    {
+        if (_currentUser is null) return;
+        await PlannerService.AddCategoryAsync(_currentUser.Id, newCat.Name, newCat.ColorHex);
+        await LoadPlannerDataAsync();
+    }
+
+    private void HandleSignOut()
+    {
+        AuthStateProvider.SignOut();
+        Nav.NavigateTo("/login");
+    }
+}

@@ -1,0 +1,421 @@
+/* PersonalPlanner - Modern Clean Stylesheet */
+:root {
+    --bg-surface: #f8fafc;
+    --card-bg: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --border-color: #e2e8f0;
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
+    --danger-color: #dc2626;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+    padding: 1.5rem;
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Auth / Login Page */
+.auth-wrapper {
+    min-height: 85vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 2.25rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+}
+
+.auth-card h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 0.925rem;
+    margin-bottom: 1.5rem;
+}
+
+.auth-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    background: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: 8px;
+}
+
+.auth-tabs button {
+    border: none;
+    background: transparent;
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.auth-tabs button.active {
+    background: var(--card-bg);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+}
+
+.form-group label,
+.modal-body label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-top: 0.35rem;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fff;
+}
+
+/* Buttons */
+.btn-primary,
+.btn-secondary,
+.btn-outline,
+.btn-google {
+    padding: 0.6rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: none;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: #0f172a;
+    color: #ffffff;
+}
+
+.btn-outline {
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-google {
+    background-color: #ffffff;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+.full-width {
+    width: 100%;
+}
+
+.divider {
+    text-align: center;
+    margin: 1rem 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.alert-error {
+    background: #fef2f2;
+    color: var(--danger-color);
+    border: 1px solid #fecaca;
+    padding: 0.65rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+
+/* Planner Header & Legend */
+.planner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.date-range-label {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.category-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+.legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: var(--card-bg);
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 1px solid var(--border-color);
+}
+
+.color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* 2-Week Calendar Grid (7 columns x 2 rows) */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(150px, 1fr));
+    gap: 0.85rem;
+}
+
+@media (max-width: 1100px) {
+    .calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.calendar-cell {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    min-height: 165px;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.calendar-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px -4px rgba(15, 23, 42, 0.1);
+}
+
+.calendar-cell.today-cell {
+    box-shadow: 0 0 0 2px var(--primary-color);
+}
+
+.cell-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    padding-bottom: 0.35rem;
+}
+
+.day-name {
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+.day-number {
+    font-weight: 600;
+}
+
+.blend-badge {
+    font-size: 0.7rem;
+    background: rgba(15, 23, 42, 0.75);
+    color: #fff;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+}
+
+.cell-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.event-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.35rem 0.55rem;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.event-pill-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.event-time {
+    font-size: 0.72rem;
+    opacity: 0.9;
+}
+
+.event-delete-btn {
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.2rem;
+}
+
+/* Modals */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+}
+
+.modal-dialog {
+    background: var(--card-bg);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 480px;
+    padding: 1.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.25rem;
+}
+
+.time-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.category-row,
+.new-category-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.preset-tag {
+    background: #e2e8f0;
+    color: #334155;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    margin-left: 0.4rem;
+}
+
+#blazor-error-ui {
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
