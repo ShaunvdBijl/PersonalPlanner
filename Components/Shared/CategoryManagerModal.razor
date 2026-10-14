@@ -1,0 +1,78 @@
+@using PersonalPlanner.Data.Models
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="OnClose">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>Manage Categories &amp; Colours</h3>
+                <button class="close-btn" @onclick="OnClose">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <h4>Existing Categories (Click colour to adjust)</h4>
+                <div class="category-list">
+                    @foreach (var cat in Categories)
+                    {
+                        <div class="category-row">
+                            <span class="cat-name">
+                                @cat.Name
+                                @if (cat.IsPreset)
+                                {
+                                    <small class="preset-tag">Preset</small>
+                                }
+                            </span>
+                            <input type="color"
+                                   value="@cat.ColorHex"
+                                   @onchange="(e) => UpdateColorAsync(cat.Id, e.Value?.ToString())" />
+                        </div>
+                    }
+                </div>
+
+                <hr />
+                <h4>Add New Category</h4>
+                <div class="new-category-row">
+                    <input type="text" @bind="_newCategoryName" placeholder="Category name (e.g., Hobbies)" />
+                    <input type="color" @bind="_newCategoryColor" />
+                    <button class="btn-primary"
+                            @onclick="CreateCategoryAsync"
+                            disabled="@string.IsNullOrWhiteSpace(_newCategoryName)">
+                        Add
+                    </button>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-primary" @onclick="OnClose">Close</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public List<Category> Categories { get; set; } = [];
+    [Parameter] public EventCallback<(Guid CategoryId, string NewColorHex)> OnColorChanged { get; set; }
+    [Parameter] public EventCallback<(string Name, string ColorHex)> OnAddCategory { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string _newCategoryName = string.Empty;
+    private string _newCategoryColor = "#8B5CF6";
+
+    private async Task UpdateColorAsync(Guid categoryId, string? newHex)
+    {
+        if (!string.IsNullOrWhiteSpace(newHex))
+        {
+            await OnColorChanged.InvokeAsync((categoryId, newHex));
+        }
+    }
+
+    private async Task CreateCategoryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newCategoryName))
+            return;
+
+        await OnAddCategory.InvokeAsync((_newCategoryName.Trim(), _newCategoryColor));
+        _newCategoryName = string.Empty;
+    }
+}
