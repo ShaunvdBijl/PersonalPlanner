@@ -1,0 +1,108 @@
+@page "/login"
+@inject IJSRuntime JS
+@inject FirebaseAuthService AuthService
+@inject PlannerAuthStateProvider AuthStateProvider
+@inject NavigationManager Nav
+
+<div class="auth-wrapper">
+    <div class="auth-card">
+        <h1>PersonalPlanner</h1>
+        <p class="subtitle">Structure your next 2 weeks with visual category blending.</p>
+
+        <div class="auth-tabs">
+            <button class="@(!_isSignUp ? "active" : "")" @onclick="() => _isSignUp = false">Log In</button>
+            <button class="@(_isSignUp ? "active" : "")" @onclick="() => _isSignUp = true">Sign Up</button>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert-error">@_errorMessage</div>
+        }
+
+        <div class="form-group">
+            @if (_isSignUp)
+            {
+                <label>Display Name</label>
+                <input type="text" @bind="_displayName" placeholder="Your name" />
+            }
+            <label>Email</label>
+            <input type="email" @bind="_email" placeholder="you@example.com" />
+
+            <label>Password</label>
+            <input type="password" @bind="_password" placeholder="••••••••" />
+        </div>
+
+        <button class="btn-primary full-width" @onclick="HandleEmailAuthAsync" disabled="@_isBusy">
+            @(_isSignUp ? "Create Account & Sign In" : "Sign In")
+        </button>
+
+        <div class="divider"><span>or</span></div>
+
+        <button class="btn-google full-width" @onclick="HandleGoogleAuthAsync" disabled="@_isBusy">
+            Continue with Google (Firebase)
+        </button>
+    </div>
+</div>
+
+@code {
+    private bool _isSignUp;
+    private string _email = string.Empty;
+    private string _password = string.Empty;
+    private string _displayName = string.Empty;
+    private string? _errorMessage;
+    private bool _isBusy;
+
+    private async Task HandleEmailAuthAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            string idToken = _isSignUp
+                ? await JS.InvokeAsync<string>("firebaseAuthInterop.signUpWithEmail", _email, _password)
+                : await JS.InvokeAsync<string>("firebaseAuthInterop.signInWithEmail", _email, _password);
+
+            await CompleteCrossCheckAsync(idToken);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task HandleGoogleAuthAsync()
+    {
+        _errorMessage = null;
+        _isBusy = true;
+        try
+        {
+            string idToken = await JS.InvokeAsync<string>("firebaseAuthInterop.signInWithGoogle");
+            await CompleteCrossCheckAsync(idToken);
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task CompleteCrossCheckAsync(string idToken)
+    {
+        var result = await AuthService.VerifyAndCrossCheckUserAsync(idToken, _isSignUp, _displayName);
+        if (!result.Succeeded || result.User is null)
+        {
+            _errorMessage = result.ErrorMessage;
+            return;
+        }
+
+        AuthStateProvider.SetAuthenticatedUser(result.User);
+        Nav.NavigateTo("/");
+    }
+}

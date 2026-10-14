@@ -1,0 +1,112 @@
+@using PersonalPlanner.Data.Models
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop" @onclick="OnClose">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h3>Add Planner Event</h3>
+                <button class="close-btn" @onclick="OnClose">&times;</button>
+            </div>
+
+            <div class="modal-body">
+                <label>Title</label>
+                <input type="text" @bind="_title" placeholder="e.g., Calculus Revision, Morning Run" />
+
+                <label>Date</label>
+                <input type="date"
+                       value="@_eventDate.ToString("yyyy-MM-dd")"
+                       @onchange="OnDateChanged" />
+
+                <label>Category</label>
+                <select @bind="_selectedCategoryId">
+                    @foreach (var cat in Categories)
+                    {
+                        <option value="@cat.Id">@cat.Name (@cat.ColorHex)</option>
+                    }
+                </select>
+
+                <div class="time-row">
+                    <div>
+                        <label>Start Time (Optional)</label>
+                        <input type="time" @onchange="OnStartTimeChanged" />
+                    </div>
+                    <div>
+                        <label>End Time (Optional)</label>
+                        <input type="time" @onchange="OnEndTimeChanged" />
+                    </div>
+                </div>
+
+                <label>Notes / Description</label>
+                <textarea rows="3" @bind="_description" placeholder="Optional details..."></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-outline" @onclick="OnClose">Cancel</button>
+                <button class="btn-primary" @onclick="SubmitAsync" disabled="@string.IsNullOrWhiteSpace(_title)">
+                    Add Event
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public DateOnly InitialDate { get; set; }
+    [Parameter] public List<Category> Categories { get; set; } = [];
+    [Parameter] public EventCallback<PlannerEvent> OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string _title = string.Empty;
+    private string? _description;
+    private DateOnly _eventDate;
+    private Guid _selectedCategoryId;
+    private TimeOnly? _startTime;
+    private TimeOnly? _endTime;
+
+    protected override void OnParametersSet()
+    {
+        _eventDate = InitialDate;
+        if (_selectedCategoryId == Guid.Empty && Categories.Count > 0)
+        {
+            _selectedCategoryId = Categories[0].Id;
+        }
+    }
+
+    private void OnDateChanged(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), out var parsed))
+            _eventDate = parsed;
+    }
+
+    private void OnStartTimeChanged(ChangeEventArgs e)
+    {
+        _startTime = TimeOnly.TryParse(e.Value?.ToString(), out var parsed) ? parsed : null;
+    }
+
+    private void OnEndTimeChanged(ChangeEventArgs e)
+    {
+        _endTime = TimeOnly.TryParse(e.Value?.ToString(), out var parsed) ? parsed : null;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_title) || _selectedCategoryId == Guid.Empty)
+            return;
+
+        var ev = new PlannerEvent
+        {
+            Title = _title.Trim(),
+            Description = _description?.Trim(),
+            EventDate = _eventDate,
+            CategoryId = _selectedCategoryId,
+            StartTime = _startTime,
+            EndTime = _endTime
+        };
+
+        _title = string.Empty;
+        _description = null;
+        await OnSave.InvokeAsync(ev);
+    }
+}
